@@ -43,6 +43,9 @@ public class Subscription implements Serializable {
     public void  addSubscribedTo(String topic){
         subscribedTo.add(topic);
     }
+    public boolean removeSubscribedTo(String topic){
+        return subscribedTo.remove(topic);
+    }
     public void  addmessage(String content, String topic, String sender){
 
         messages.add(new Message(topic, sender, content));

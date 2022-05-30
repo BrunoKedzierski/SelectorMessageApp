@@ -72,8 +72,14 @@ public class MessageClient {
             cbuf = charset.decode(inBuf);
 
             String odSerwera = cbuf.toString();
-            Message[] messages =  gson.fromJson(odSerwera.trim(), Message[].class);
-            System.out.println("Klient: serwer właśnie odpisał ... " + Arrays.asList(messages));
+            if(odSerwera.startsWith("[")) {
+                Message[] messages = gson.fromJson(odSerwera.trim(), Message[].class);
+                System.out.println("Klient: serwer właśnie odpisał ... " + Arrays.asList(messages));
+            }
+            else if(odSerwera.startsWith("{")){
+                Message message = gson.fromJson(odSerwera.trim(), Message.class);
+                System.out.println("Klient: serwer właśnie odpisał ... " + Arrays.asList(message));
+            }
 
         }
         else
@@ -93,7 +99,7 @@ public class MessageClient {
 
 
     public static void main(String[] args) throws IOException {
-        MessageClient client = new MessageClient("localhost",12455);
+        MessageClient client = new MessageClient("localhost",12555);
         client.connect();
         Scanner scanner = new Scanner(System.in);
         System.out.println("What to do next:\n" +

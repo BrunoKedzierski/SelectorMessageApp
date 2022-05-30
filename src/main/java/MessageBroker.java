@@ -3,11 +3,13 @@ import com.google.gson.Gson;
 
 import java.io.IOException;
 import java.net.InetSocketAddress;
+import java.net.SocketException;
 import java.nio.ByteBuffer;
 import java.nio.CharBuffer;
 import java.nio.channels.*;
 import java.nio.charset.Charset;
 import java.util.*;
+import java.util.stream.Collectors;
 
 
 public class MessageBroker {
@@ -52,12 +54,15 @@ public class MessageBroker {
         while (true){
 
             selector.select();
-            handleRequest(selector.selectedKeys());
+            try {
+                handleRequest(selector.selectedKeys());
+            }catch (SocketException e){
+                System.out.println("Connection closed");
 
+            }
         }
 
     }
-
 
     public void handleRequest(Set<SelectionKey> keys) throws IOException {
         Iterator<SelectionKey> iter = keys.iterator();
@@ -70,71 +75,69 @@ public class MessageBroker {
             // w przeciwnym razie w kolejnym kroku pętli "obsłużony" klucz
             // dostalibyśmy do ponownej obsługi
             iter.remove();
+            if(key.isValid()) {
+                // Wykonanie oper/cji opisywanej przez klucz
+                if (key.isAcceptable()) { // połaczenie klienta gotowe do akceptacji
 
-            // Wykonanie operacji opisywanej przez klucz
-            if (key.isAcceptable()) { // połaczenie klienta gotowe do akceptacji
+                    System.out.println("Serwer: ktoś się połączył ..., akceptuję go ... ");
+                    // Uzyskanie kanału do komunikacji z klientem
+                    // accept jest nieblokujące, bo już klient czeka
+                    SocketChannel cc = serverChannel.accept();
 
-                System.out.println("Serwer: ktoś się połączył ..., akceptuję go ... ");
-                // Uzyskanie kanału do komunikacji z klientem
-                // accept jest nieblokujące, bo już klient czeka
-                SocketChannel cc = serverChannel.accept();
+                    // Kanał nieblokujący, bo będzie rejestrowany u selektora
+                    cc.configureBlocking(false);
 
-                // Kanał nieblokujący, bo będzie rejestrowany u selektora
-                cc.configureBlocking(false);
+                    // rejestrujemy kanał komunikacji z klientem
+                    // do monitorowania przez ten sam selektor
+                    cc.register(selector, SelectionKey.OP_READ | SelectionKey.OP_WRITE, new Subscription());
 
-                // rejestrujemy kanał komunikacji z klientem
-                // do monitorowania przez ten sam selektor
-                cc.register(selector, SelectionKey.OP_READ | SelectionKey.OP_WRITE, new Subscription());
-
-                continue;
-            }
-
-            if (key.isReadable()) {  // któryś z kanałów gotowy do czytania
-
-                System.out.println("is readable");
-                // Uzyskanie kanału na którym czekają dane do odczytania
-                SelectableChannel channelKey = key.channel();
-                SocketChannel cc = (SocketChannel) channelKey;
-
-                serviceRequest(cc, key);
-
-                // obsługa zleceń klienta
-                // ...
-                continue;
-            }
-            if (key.isWritable()) {  // któryś z kanałów gotowy do pisania
-
-
-                SocketChannel cc = (SocketChannel) key.channel();
-
-                Subscription subscription = (Subscription) key.attachment();
-                if (subscription == null)
-                    break;
-                Set<String> subscribedTopics = subscription.getSubscribedTo();
-                List<Message> messagesToSend = new ArrayList<>();
-                for (Map.Entry<Message,List<String> > e: messagesAquired.entrySet() ) {
-                    if(subscribedTopics.contains(e.getKey().getTopic()) && !e.getValue().contains(subscription.getSubscriptionId()) ){
-
-                        e.getValue().add(subscription.getSubscriptionId());
-                        messagesToSend.add(e.getKey());
-                    }
+                    continue;
                 }
 
-                if(!messagesToSend.isEmpty())
-                    cc.write(charset.encode(CharBuffer.wrap(gson.toJson(messagesToSend))));
+                if (key.isReadable()) {  // któryś z kanałów gotowy do czytania
+
+                    System.out.println("is readable");
+                    // Uzyskanie kanału na którym czekają dane do odczytania
+                    SelectableChannel channelKey = key.channel();
+                    SocketChannel cc = (SocketChannel) channelKey;
+
+                    serviceRequest(cc, key);
+
+                    // obsługa zleceń klienta
+                    // ...
+                    continue;
+                }
+                if (key.isWritable()) {  // któryś z kanałów gotowy do pisania
 
 
+                    SocketChannel cc = (SocketChannel) key.channel();
 
-                continue;
+                    Subscription subscription = (Subscription) key.attachment();
+                    if (subscription == null)
+                        break;
+                    Set<String> subscribedTopics = subscription.getSubscribedTo();
+                    List<Message> messagesToSend = new ArrayList<>();
+                    for (Map.Entry<Message, List<String>> e : messagesAquired.entrySet()) {
+                        if (subscribedTopics.contains(e.getKey().getTopic()) && !e.getValue().contains(subscription.getSubscriptionId())) {
+
+                            e.getValue().add(subscription.getSubscriptionId());
+                            messagesToSend.add(e.getKey());
+                        }
+                    }
+
+                    if (!messagesToSend.isEmpty())
+                        cc.write(charset.encode(CharBuffer.wrap(gson.toJson(messagesToSend))));
+
+                    continue;
+                }
             }
-
         }
 
 
     }
 
     public static void main(String[] args) throws IOException, InterruptedException {
-        MessageBroker messageBroker =  new MessageBroker("localhost",12455);
+        MessageBroker messageBroker =  new MessageBroker("localhost",12555);
         messageBroker.listen();
     }
 
@@ -201,8 +204,30 @@ public class MessageBroker {
             }
 
             else {
+                String arr[] = new String[2];
+                arr = cmd.split(" ");
                 Subscription subscription = (Subscription) key.attachment();
-                subscription.addSubscribedTo(cmd);
+                if (arr[0].equals("sub")) {
+                    String topicToAdd = arr[1];
+                    boolean found = messagesAquired.keySet().stream().anyMatch(m -> m.getTopic().equals(topicToAdd));
+                    if(found)
+                        subscription.addSubscribedTo(arr[1]);
+                    else
+                        sc.write(charset.encode(CharBuffer.wrap(gson.toJson(new Message("ERROR Cannot subscribe to this topic, there are no messages yet","broker",arr[1])))));
+                } else if (arr[0].equals("rm")) {
+                    boolean status = subscription.removeSubscribedTo(arr[1]);
+                    if (status == false){
+                        sc.write(charset.encode(CharBuffer.wrap(gson.toJson(new Message("ERROR Cannot remove unsubscribed topic","broker",arr[1])))));
+                    }
+                }
+                else if(arr[0].equals("sh")){
+                    Set<String> topics = messagesAquired.keySet().stream().map(m -> m.getTopic()).collect(Collectors.toSet());
+                    sc.write(charset.encode(CharBuffer.wrap(gson.toJson(new Message("Available topics","broker",topics.toString() )))));
+                }
+                else{
+                    sc.write(charset.encode(CharBuffer.wrap(gson.toJson(new Message("ERROR Unrecognized Request","broker",arr[0])))));
+
+                }
             }
 
 

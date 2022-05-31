@@ -1,0 +1,34 @@
+<?xml version="1.0" encoding="UTF-8"?>
+
+<?import javafx.geometry.Insets?>
+<?import javafx.scene.control.Button?>
+<?import javafx.scene.control.ButtonBar?>
+<?import javafx.scene.control.TextArea?>
+<?import javafx.scene.control.TextField?>
+<?import javafx.scene.layout.HBox?>
+<?import javafx.scene.layout.VBox?>
+
+<VBox prefHeight="535.0" prefWidth="657.0" spacing="2.0" xmlns="http://javafx.com/javafx/17" xmlns:fx="http://javafx.com/fxml/1" fx:controller="com.bkk.selectorchatgui.ClientController">
+    <padding>
+        <Insets bottom="20.0" left="20.0" right="20.0" top="10.0" />
+    </padding>
+   <children>
+      <Button mnemonicParsing="false" prefHeight="26.0" prefWidth="77.0" text="Clear" onMouseClicked="#clearTermminal"/>
+      <TextArea fx:id="terminal" prefHeight="455.0" prefWidth="618.0" />
+      <HBox alignment="CENTER" prefHeight="100.0" prefWidth="200.0" />
+      <ButtonBar prefHeight="40.0" prefWidth="200.0">
+        <buttons>
+          <Button fx:id="showTopics" mnemonicParsing="false" onMouseClicked="#showTopics" text="Show topics" />
+            <Button mnemonicParsing="false" onMouseClicked="#showMessages" text="Get messages" />
+            <Button mnemonicParsing="false" onMouseClicked="#subscribe" text="Subscribe ">
+               <opaqueInsets>
+                  <Insets bottom="5.0" left="5.0" right="5.0" top="5.0" />
+               </opaqueInsets>
+            </Button>
+            <TextField fx:id="subscribeTopic" />
+            <Button mnemonicParsing="false" onMouseClicked="#unsubscribe" text="Unsubscribe" />
+            <TextField fx:id="unsubs" />
+        </buttons>
+      </ButtonBar>
+   </children>
+</VBox>

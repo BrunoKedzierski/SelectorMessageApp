@@ -1,3 +1,4 @@
+package com.bkk.selectorchatgui;
 
 import com.google.gson.Gson;
 
@@ -195,7 +196,6 @@ public class MessageBroker {
                     messagesAquired.put(message,new ArrayList<>());
                 } catch (Exception e){
                     e.printStackTrace();
-                    System.out.println( );
 
 
                 }

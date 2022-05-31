@@ -1,3 +1,5 @@
+package com.bkk.selectorchatgui;
+
 import com.google.gson.Gson;
 
 import java.io.Serializable;
@@ -60,11 +62,10 @@ public class Message implements Serializable {
 
     @Override
     public String toString() {
-        return "Message{" +
-                "messageId='" + messageId + '\'' +
-                ", topic='" + topic + '\'' +
-                ", sender='" + sender + '\'' +
-                ", content='" + content + '\'' +
-                '}';
+        return
+                "*******************************\n"  +
+                "topic:" + topic + '\n' +
+                "sender:" + sender + '\n' +
+                "content:" + content + '\n';
     }
 }

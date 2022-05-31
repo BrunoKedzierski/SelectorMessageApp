@@ -1,16 +1,14 @@
+package com.bkk.selectorchatgui;
+
 import com.google.gson.Gson;
 
-import java.io.*;
+import java.io.IOException;
 import java.net.InetSocketAddress;
-import java.net.Socket;
 import java.net.UnknownHostException;
-import java.nio.Buffer;
 import java.nio.ByteBuffer;
 import java.nio.CharBuffer;
-import java.nio.channels.Channel;
 import java.nio.channels.SocketChannel;
 import java.nio.charset.Charset;
-import java.nio.charset.StandardCharsets;
 import java.util.Arrays;
 import java.util.Scanner;
 
@@ -30,9 +28,9 @@ public class MessageAdmin {
         this.port = port;
     }
 
-    public void connect(){
+    public void connect() throws IOException {
 
-        try{
+
             channel = SocketChannel.open();
             channel.configureBlocking(false);
             channel.connect(new InetSocketAddress(server,port));
@@ -42,14 +40,10 @@ public class MessageAdmin {
                 System.out.println(loadingBar);
                 loadingBar.append(".");
             }
-        } catch (UnknownHostException unknownHostException){
-            unknownHostException.printStackTrace();
-        }
-        catch (Exception ex){
-            ex.printStackTrace();
-        }
+
 
         System.out.println("Connected");
+        sendData("Passphrase:admin");
 
 
     }

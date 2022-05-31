@@ -1,15 +1,17 @@
+package com.bkk.selectorchatgui;
+
 
 import com.google.gson.Gson;
-
 import java.io.IOException;
+import java.net.ConnectException;
 import java.net.InetSocketAddress;
 import java.net.UnknownHostException;
 import java.nio.ByteBuffer;
 import java.nio.CharBuffer;
 import java.nio.channels.SocketChannel;
 import java.nio.charset.Charset;
-import java.sql.Statement;
 import java.util.Arrays;
+import java.util.List;
 import java.util.Scanner;
 
 public class MessageClient {
@@ -27,9 +29,9 @@ public class MessageClient {
         this.port = port;
     }
 
-    public void connect(){
+    public void connect() throws IOException {
 
-        try{
+
             channel = SocketChannel.open();
             channel.configureBlocking(false);
             channel.connect(new InetSocketAddress(server,port));
@@ -39,19 +41,13 @@ public class MessageClient {
                 System.out.println(loadingBar);
                 loadingBar.append(".");
             }
-        } catch (UnknownHostException unknownHostException){
-            unknownHostException.printStackTrace();
-        }
-        catch (Exception ex){
-            ex.printStackTrace();
-        }
 
         System.out.println("Connected");
 
 
     }
 
-    public void fetchData() throws IOException {
+    public String fetchData() throws IOException {
         ByteBuffer inBuf = ByteBuffer.allocateDirect(rozmiar_bufora);
         CharBuffer cbuf = null;
         inBuf.clear();	// opróżnienie bufora wejściowego
@@ -74,18 +70,29 @@ public class MessageClient {
             String odSerwera = cbuf.toString();
             if(odSerwera.startsWith("[")) {
                 Message[] messages = gson.fromJson(odSerwera.trim(), Message[].class);
-                System.out.println("Klient: serwer właśnie odpisał ... " + Arrays.asList(messages));
+                return "Klient: serwer właśnie odpisał ... \n" + printMessages(Arrays.asList(messages));
             }
             else if(odSerwera.startsWith("{")){
                 Message message = gson.fromJson(odSerwera.trim(), Message.class);
-                System.out.println("Klient: serwer właśnie odpisał ... " + Arrays.asList(message));
+                return "Klient: serwer właśnie odpisał ... \n" + message.toString();
             }
 
         }
-        else
-            System.out.println("Brak danych od serwera");
+            return "No new data";
 
 
+    }
+
+
+
+    public String printMessages(List<Message> messageList){
+        StringBuilder builder = new StringBuilder();
+        for(Message m : messageList){
+
+            builder.append(m.toString());
+        }
+
+        return builder.toString();
     }
 
     public void sendData(String message) throws IOException {

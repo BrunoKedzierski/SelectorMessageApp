@@ -14,6 +14,7 @@ public class MenuController {
 
     public void LoadClientView(MouseEvent event) throws IOException {
 
+
         Button btn =  (Button) event.getSource();
         Stage stage = (Stage) btn.getScene().getWindow();
 
